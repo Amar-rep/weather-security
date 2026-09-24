@@ -1,10 +1,9 @@
 package com.example.guardian.dto;
 
-import com.example.guardian.entity.*;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,5 +18,6 @@ public class RegisterRequest {
 	@Size(min = 5, max = 100, message = "Password must be between 5 and 100 characters")
 	private String password;
 	@NotNull(message = "role required")
-	private Role role;
+	@Pattern(regexp = "ADMIN|USER", message = "role must be ADMIN or USER")
+	private String role;
 }

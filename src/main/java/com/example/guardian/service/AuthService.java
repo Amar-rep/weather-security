@@ -19,8 +19,11 @@ import org.springframework.stereotype.Service;
 import com.example.guardian.dto.LoginRequest;
 import com.example.guardian.dto.RegisterRequest;
 import com.example.guardian.dto.TokenResponse;
+import com.example.guardian.entity.AuditAction;
 import com.example.guardian.entity.Member;
+import com.example.guardian.entity.Role;
 import com.example.guardian.exception.InvalidCredentialsException;
+import com.example.guardian.exception.RegistrationException;
 import com.example.guardian.repository.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final AuditService auditService;
 
     @Value("${jwt.access-token-expiration}")
     private Duration expiration;
@@ -44,24 +48,25 @@ public class AuthService {
     public void register(RegisterRequest request) {
 
         if (memberRepository.existsByEmail(request.getEmail())) {
-        	log.error("Email already exists {}",request.getEmail());
-            throw new RuntimeException("Email already exists");
+        	log.warn("Email already exists {}",request.getEmail());
+            throw new RegistrationException("Email already exists");
         }
+       
         Member user = new Member();
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole());
+        user.setRole(Role.valueOf(request.getRole()));
         user.setCreatedAt(Instant.now());
         user.setUpdatedAt(Instant.now());
+        log.info("user registered email:"+request.getEmail());
         memberRepository.save(user);
+        auditService.logEvent(user, AuditAction.USER_REGISTERED, "user registered");
     }
 
     public TokenResponse login(LoginRequest request) {
 
     	
     try {
-		
-	
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
@@ -72,7 +77,7 @@ public class AuthService {
         String accessToken = jwtService.generateToken(userDetails);
         UUID familyId=UUID.randomUUID();
         String refreshToken = refreshTokenService.createToken(user,familyId);
-
+        log.info("User logged in user:"+request.getEmail());
         return new TokenResponse(accessToken, refreshToken, "Bearer", expiration.toMinutes());
     }
     catch (BadCredentialsException e) {

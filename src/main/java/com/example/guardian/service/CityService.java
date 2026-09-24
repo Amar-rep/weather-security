@@ -18,9 +18,11 @@ import com.example.guardian.repository.CityRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class CityService {
 
 	private final CityRepository cityRepository;
@@ -33,6 +35,7 @@ public class CityService {
 				request.getName(), request.getState(), request.getCountry());
 
 		if (!cityExist.isEmpty()) {
+			log.warn("city already exists :"+request.getName());
 			throw new CityAlreadyExistException("City already exists");
 		}
 		List<GeocodingResponse> geoList = geoCodingService.getCoordinates(request.getName(), request.getState(),

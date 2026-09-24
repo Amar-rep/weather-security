@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 		ErrorResponse response = new ErrorResponse(HttpStatus.CONFLICT.value(), ex.getMessage(), Instant.now());
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
 	}
-	
+
 	@ExceptionHandler(CityNotFoundException.class)
 	public ResponseEntity<ErrorResponse> handleCityExists(CityNotFoundException ex) {
 		ErrorResponse response = new ErrorResponse(HttpStatus.CONFLICT.value(), ex.getMessage(), Instant.now());
@@ -42,8 +42,7 @@ public class GlobalExceptionHandler {
 		ErrorResponse response = new ErrorResponse(HttpStatus.BAD_GATEWAY.value(), ex.getMessage(), Instant.now());
 		return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(response);
 	}
-	
-	
+
 	@ExceptionHandler(InvalidCredentialsException.class)
 	public ResponseEntity<ErrorResponse> handleInvalidCred(InvalidCredentialsException ex) {
 		ErrorResponse response = new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), ex.getMessage(), Instant.now());
@@ -59,20 +58,26 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.badRequest()
 				.body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message, Instant.now()));
 	}
-	
+
 	@ExceptionHandler(RefreshTokenException.class)
 	public ResponseEntity<ErrorResponse> handleRefreshTokenException(RefreshTokenException ex) {
 		ErrorResponse response = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), Instant.now());
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-	
-	
+
+	}
+
+	@ExceptionHandler(RegistrationException.class)
+	public ResponseEntity<ErrorResponse> handleRegistrationException(RegistrationException ex) {
+
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ErrorResponse(HttpStatus.CONFLICT.value(), ex.getMessage(), Instant.now()));
 	}
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
 
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-				new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Something gone  wrong ", Instant.now()));
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage(), Instant.now()));
 	}
 
 }

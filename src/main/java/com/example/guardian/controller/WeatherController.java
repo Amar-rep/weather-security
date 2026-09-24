@@ -1,6 +1,7 @@
 package com.example.guardian.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,10 +21,10 @@ public class WeatherController {
 	    @GetMapping
 	    public ResponseEntity<WeatherResponse> getWeather(
 	            @RequestParam String name,
-	            @RequestParam String state) {
+	            @RequestParam String state,Authentication authentication) {
 
 	        WeatherResponse response =
-	                weatherService.getWeather(name, state);
+	                weatherService.getWeather(name, state,authentication);
 
 	        return ResponseEntity.ok(response);
 	    }
