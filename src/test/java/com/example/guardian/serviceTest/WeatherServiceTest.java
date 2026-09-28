@@ -6,9 +6,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.net.Authenticator;
-
 import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -49,9 +48,7 @@ public class WeatherServiceTest {
         city.setState("Kerala");
         city.setLatitude(new BigDecimal("11.43"));
         city.setLongitude(new BigDecimal("75.54"));
-
         WeatherResponse response = new WeatherResponse("bakkalam", 34.23, 45, 23.234, "cloundy");
-
         when(cityRepository
                 .findByNameIgnoreCaseAndStateIgnoreCase(
                         "bakkalam",
@@ -59,9 +56,7 @@ public class WeatherServiceTest {
                 .thenReturn(Optional.of(city));
         when(authentication.getName()).thenReturn("user@gmail.com");
         when(weatherGateWay.getWeather(city.getLatitude(), city.getLongitude())).thenReturn(response);
-
         WeatherResponse result = weatherService.getWeather("bakkalam", "kerala", authentication);
-
         assertEquals(result, response);
         verify(auditService).logEventEmail("user@gmail.com", AuditAction.WEATHER_SEARCH, "weather search...");
         verify(weatherGateWay).getWeather(
@@ -75,9 +70,7 @@ public class WeatherServiceTest {
         city.setName("bakkalam");
         city.setLatitude(new BigDecimal("11.23"));
         city.setLongitude(new BigDecimal("13.43"));
-
         when(cityRepository.findByNameIgnoreCaseAndStateIgnoreCase("bakkalam", "kerala")).thenReturn(Optional.of(city));
-
         when(authentication.getName())
                 .thenReturn("user@gmail.com");
         when(weatherGateWay.getWeather(city.getLatitude(), city.getLongitude()))

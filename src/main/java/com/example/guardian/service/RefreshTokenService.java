@@ -11,109 +11,93 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.example.guardian.entity.Member;
 import com.example.guardian.entity.RefreshToken;
 import com.example.guardian.exception.RefreshTokenException;
 import com.example.guardian.repository.RefreshTokenRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenService {
 
-    private final RefreshTokenRepository refreshTokenRepository;
+	private final RefreshTokenRepository refreshTokenRepository;
 
-    private final SecureRandom secureRandom = new SecureRandom();
+	private final SecureRandom secureRandom = new SecureRandom();
 
-    @Value("${jwt.refresh-token-expiration}")
-    private Duration refreshTokenExpiration;
+	@Value("${jwt.refresh-token-expiration}")
+	private Duration refreshTokenExpiration;
 
-    public String createToken(Member user, UUID familyId) {
+	public String createToken(Member user, UUID familyId) {
+		String rawToken = generateToken();
+		RefreshToken refreshToken = new RefreshToken();
+		refreshToken.setTokenHash(hash(rawToken));
+		refreshToken.setMember(user);
+		refreshToken.setFamilyId(familyId);
+		refreshToken.setExpiresAt(Instant.now().plus(refreshTokenExpiration));
+		refreshToken.setCreatedAt(Instant.now());
+		refreshToken.setRevoked(false);
+		refreshTokenRepository.save(refreshToken);
+		return rawToken;
+	}
 
-        String rawToken = generateToken();
+	@Transactional
+	public RefreshResult rotateToken(String rawToken) {
+		String tokenHash = hash(rawToken);
+		RefreshToken oldToken = refreshTokenRepository.findByTokenHash(tokenHash)
+				.orElseThrow(() -> new RefreshTokenException("Invalid refresh token"));
+		if (oldToken.isRevoked()) {
+			revokeFamily(oldToken.getFamilyId());
+			log.warn("Invalid refresh token used {}",tokenHash);
+			throw new RefreshTokenException("Refresh token already revoked ");
+		}
+		if (oldToken.getExpiresAt().isBefore(Instant.now())) {
+			throw new RefreshTokenException("Refresh token expired");
+		}
+		oldToken.setRevoked(true);
+		UUID familyId = oldToken.getFamilyId();
+		refreshTokenRepository.save(oldToken);
+		String newRefreshToken = createToken(oldToken.getMember(), familyId);
+		return new RefreshResult(oldToken.getMember(), newRefreshToken);
+	}
 
-        RefreshToken refreshToken = new RefreshToken();
+	@Transactional
+	public void revokeToken(String rawToken) {
+		String tokenHash = hash(rawToken);
+		RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHash)
+				.orElseThrow(() -> new RefreshTokenException("Invalid refresh token"));
+		token.setRevoked(true);
+		token.setRevokedAt(Instant.now());
+		refreshTokenRepository.save(token);
+	}
 
-        refreshToken.setTokenHash(hash(rawToken));
+	private String generateToken() {
+		byte[] bytes = new byte[32];
+		secureRandom.nextBytes(bytes);
+		return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+	}
 
-        refreshToken.setMember(user);
-        refreshToken.setFamilyId(familyId);
-        refreshToken.setExpiresAt(Instant.now().plus(refreshTokenExpiration));
-        refreshToken.setCreatedAt(Instant.now());
-        refreshToken.setRevoked(false);
+	private String hash(String token) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+			return HexFormat.of().formatHex(hash);
+		} catch (Exception e) {
+			throw new RefreshTokenException(e.getMessage());
+		}
+	}
 
-        refreshTokenRepository.save(refreshToken);
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	private void revokeFamily(UUID familyIdUuid) {
+		refreshTokenRepository.revokeFamily(familyIdUuid, Instant.now());
+	}
 
-        return rawToken;
-    }
-
-    @Transactional
-    public RefreshResult rotateToken(String rawToken) {
-
-        String tokenHash = hash(rawToken);
-
-        RefreshToken oldToken = refreshTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
-
-        if (oldToken.isRevoked()) {
-            throw new RefreshTokenException("Refresh token already revoked");
-        }
-
-        if (oldToken.getExpiresAt().isBefore(Instant.now())) {
-
-            throw new RefreshTokenException("Refresh token expired");
-        }
-
-        // R1 becomes invalid
-        oldToken.setRevoked(true);
-        UUID familyId = oldToken.getFamilyId();
-        refreshTokenRepository.save(oldToken);
-
-        String newRefreshToken = createToken(oldToken.getMember(), familyId);
-
-        return new RefreshResult(oldToken.getMember(), newRefreshToken);
-    }
-
-    @Transactional
-    public void revokeToken(String rawToken) {
-
-        String tokenHash = hash(rawToken);
-
-        RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new RefreshTokenException("Invalid refresh token"));
-        
-        token.setRevoked(true);
-
-        refreshTokenRepository.save(token);
-    }
-
-    private String generateToken() {
-
-        byte[] bytes = new byte[32];
-
-        secureRandom.nextBytes(bytes);
-
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private String hash(String token) {
-
-        try {
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-
-            return HexFormat.of().formatHex(hash);
-
-        } catch (Exception e) {
-
-            throw new RefreshTokenException(e.getMessage());
-        }
-    }
-
-    public record RefreshResult(Member user, String newRefreshToken) {
-    }
+	public record RefreshResult(Member user, String newRefreshToken) {
+	}
 }

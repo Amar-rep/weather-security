@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class GeoCodingController {
 	private final GeoCodingService geoCodingService;
-	
+
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping
 	public ResponseEntity<List<GeocodingResponse>> getData(@RequestParam String city, @RequestParam String state,

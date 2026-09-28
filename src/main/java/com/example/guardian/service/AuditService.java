@@ -28,14 +28,11 @@ public class AuditService {
 		auditLog.setUser(member);
 		auditLog.setCreatedAt(Instant.now());
 		auditLogRepository.save(auditLog);
-		log.info("Logged event action: {} user {}", auditAction.name(), member.getEmail());
 	}
 
 	public void logEventEmail(String email, AuditAction auditAction, String details) {
-
 		Member member = memberRepository.findByEmail(email)
 				.orElseThrow(() -> new MemberNotFoundException("Member not found"));
-
 		logEvent(member, auditAction, details);
 	}
 

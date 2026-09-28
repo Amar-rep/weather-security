@@ -9,27 +9,19 @@ import org.springframework.context.annotation.Configuration;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-
-
 @Configuration
 public class CacheConfig {
 
-    @Bean
-    public Caffeine<Object, Object> caffeine() {
-        return Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofMinutes(10))
-                .maximumSize(1000);
-    }
+	@Bean
+	public Caffeine<Object, Object> caffeine() {
+		return Caffeine.newBuilder().expireAfterWrite(Duration.ofMinutes(10)).maximumSize(1000);
+	}
 
-    @Bean
-    public CacheManager cacheManager(
-            Caffeine<Object, Object> caffeine) {
+	@Bean
+	public CacheManager cacheManager(Caffeine<Object, Object> caffeine) {
 
-        CaffeineCacheManager cacheManager =
-                new CaffeineCacheManager("weather");
-
-        cacheManager.setCaffeine(caffeine);
-
-        return cacheManager;
-    }
+		CaffeineCacheManager cacheManager = new CaffeineCacheManager("weather");
+		cacheManager.setCaffeine(caffeine);
+		return cacheManager;
+	}
 }

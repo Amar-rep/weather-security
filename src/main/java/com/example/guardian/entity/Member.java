@@ -16,26 +16,26 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name="members")
+@Table(name = "members")
 public class Member {
-	
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
-	
+
 	@Column(nullable = false, unique = true)
-    private String email;
+	private String email;
 
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
+	@Column(name = "password_hash", nullable = false)
+	private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private Role role;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private Role role;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+	@Column(name = "created_at", nullable = false)
+	private Instant createdAt;
 
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+	@Column(name = "updated_at")
+	private Instant updatedAt;
 }

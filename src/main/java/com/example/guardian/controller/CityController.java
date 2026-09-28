@@ -36,36 +36,28 @@ public class CityController {
 	public ResponseEntity<List<CityResponse>> addCity(@Valid @RequestBody CityRequest request,
 			Authentication authentication) {
 		String email = authentication.getName();
-
 		Member admin = memberService.findByEmail(email);
 		List<CityResponse> response = cityService.addCity(request, admin);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
-	
+
 	@GetMapping("/search")
 	public ResponseEntity<CityResponse> findByNameAndState(@RequestParam String name, @RequestParam String state) {
-
 		return ResponseEntity.ok(cityService.findByNameAndState(name, state));
 	}
-	
+
 	@GetMapping
 	public ResponseEntity<List<CityResponse>> getAllCities() {
-
-	    List<CityResponse> response = cityService.getAllCities();
-	    
-	    return ResponseEntity.ok(response);
+		List<CityResponse> response = cityService.getAllCities();
+		return ResponseEntity.ok(response);
 	}
 
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<Void> deleteCity(@PathVariable Long id, Authentication authentication) {
-
 		String email = authentication.getName();
-
 		Member admin = memberService.findByEmail(email);
-
 		cityService.removeCity(id, admin);
-
 		return ResponseEntity.noContent().build();
 	}
 

@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 public class GeoCodingService {
 
 	private final GeoCodingGateway geoCodingGateway;
-
 	public List<GeocodingResponse> getCoordinates(String city, String state, String country) {
 		return geoCodingGateway.getGeoCoding(city, state, country);
 	}

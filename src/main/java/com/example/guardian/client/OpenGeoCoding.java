@@ -23,19 +23,15 @@ public class OpenGeoCoding implements GeoCodingGateway {
 	public List<GeocodingResponse> getGeoCoding(String name, String state, String country) {
 
 		String query = name + "," + country;
-
 		GeocodingResponse[] response = openWeatherRestClient
-				.get().uri(uriBuilder -> uriBuilder.path("/geo/1.0/direct").
-						queryParam("q", query)
-						.queryParam("limit", 5).
-						queryParam("appid", apiKey).
-						build())
+				.get().uri(uriBuilder -> uriBuilder.path("/geo/1.0/direct").queryParam("q", query)
+						.queryParam("limit", 5).queryParam("appid", apiKey).build())
 				.retrieve().body(GeocodingResponse[].class);
 
 		if (response == null || response.length == 0) {
 			throw new GeoCodingException("Unable to locate position");
 		}
-
-		return Arrays.stream(response).filter(loc->loc.getState()!=null && loc.getState().equalsIgnoreCase(state)).toList();
+		return Arrays.stream(response).filter(loc -> loc.getState() != null && loc.getState().equalsIgnoreCase(state))
+				.toList();
 	}
 }

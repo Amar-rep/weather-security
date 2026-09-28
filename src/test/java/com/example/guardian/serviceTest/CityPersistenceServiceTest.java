@@ -1,5 +1,6 @@
 package com.example.guardian.serviceTest;
 
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,63 +20,78 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.example.guardian.dto.CityRequest;
 import com.example.guardian.dto.CityResponse;
 import com.example.guardian.dto.GeocodingResponse;
+import com.example.guardian.entity.AuditAction;
 import com.example.guardian.entity.City;
 import com.example.guardian.entity.Member;
 import com.example.guardian.exception.CityAlreadyExistException;
 import com.example.guardian.repository.CityRepository;
+import com.example.guardian.service.AuditService;
 import com.example.guardian.service.CityPersistenceService;
-import com.example.guardian.service.CityService;
-import com.example.guardian.service.GeoCodingService;
 
 @ExtendWith(MockitoExtension.class)
-public class CityServiceTest {
+class CityPersistenceServiceTest {
+
 	@Mock
 	private CityRepository cityRepository;
 
 	@Mock
-	private GeoCodingService geoCodingService;
+	private AuditService auditService;
 
-	@Mock
-	private CityPersistenceService cityPersistenceService;
 	@InjectMocks
-	private CityService cityService;
+	private CityPersistenceService cityPersistenceService;
 
 	@Test
-	void addCity_success() {
+	void saveCity_success() {
 
 		CityRequest request = new CityRequest();
 		request.setName("Bakkalam");
 		request.setState("Kerala");
 		request.setCountry("IN");
+
 		Member admin = new Member();
 		admin.setEmail("admin@gmail.com");
+
 		GeocodingResponse geo = new GeocodingResponse();
 		geo.setLat(new BigDecimal("11.98"));
 		geo.setLon(new BigDecimal("75.35"));
-		CityResponse response = new CityResponse(1L, "bakkalam", "kerala", "IN", new BigDecimal("11.98"),
-				new BigDecimal("75.35"));
+
 		when(cityRepository.findByNameIgnoreCaseAndStateIgnoreCaseAndCountryIgnoreCase("Bakkalam", "Kerala", "IN"))
 				.thenReturn(List.of());
-		when(geoCodingService.getCoordinates("Bakkalam", "Kerala", "IN")).thenReturn(List.of(geo));
-		when(cityPersistenceService.saveCity(request, admin, geo)).thenReturn(List.of(response));
-		List<CityResponse> result = cityService.addCity(request, admin);
+
+		when(cityRepository.save(any(City.class))).thenAnswer(invocation -> {
+
+			City city = invocation.getArgument(0);
+			city.setId(1L);
+
+			return city;
+		});
+
+		List<CityResponse> result = cityPersistenceService.saveCity(request, admin, geo);
+
 		assertEquals(1, result.size());
 		assertEquals("bakkalam", result.get(0).getName());
-		verify(geoCodingService).getCoordinates("Bakkalam", "Kerala", "IN");
-		verify(cityPersistenceService).saveCity(request, admin, geo);
+
+		verify(cityRepository).save(any(City.class));
+
+		verify(auditService).logEvent(admin, AuditAction.CITY_ADDED, "Added city: bakkalam");
 	}
 
 	@Test
-	void addCity_failure() {
+	void saveCity_shouldThrowException_whenCityExists() {
+
 		CityRequest request = new CityRequest();
 		request.setName("Bakkalam");
 		request.setState("Kerala");
 		request.setCountry("IN");
+
 		when(cityRepository.findByNameIgnoreCaseAndStateIgnoreCaseAndCountryIgnoreCase("Bakkalam", "Kerala", "IN"))
 				.thenReturn(List.of(new City()));
-		assertThrows(CityAlreadyExistException.class, () -> cityService.addCity(request, new Member()));
-		verify(geoCodingService, never()).getCoordinates(any(), any(), any());
-		verify(cityPersistenceService, never()).saveCity(any(), any(), any());
-	}
 
+		assertThrows(CityAlreadyExistException.class,
+				() -> cityPersistenceService.saveCity(request, new Member(), new GeocodingResponse()));
+
+		verify(cityRepository, never()).save(any());
+
+		verify(auditService, never()).logEvent(any(), any(), any());
+	}
 }

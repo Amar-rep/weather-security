@@ -19,41 +19,23 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OpenWeather implements WeatherGateWay {
 
-        private final RestClient openWeatherRestClient;
-        @Value("${openweather.api.key}")
-        private String apiKey;
+	private final RestClient openWeatherRestClient;
+	@Value("${openweather.api.key}")
+	private String apiKey;
 
-        @Override
-        @Cacheable(
-                cacheNames = "weather",
-                key = "#latitude.toString() + ':' + #longitude.toString()"
-        )
-        public WeatherResponse getWeather(
-                        BigDecimal latitude,
-                        BigDecimal longitude) {
-        		log.info("cache miss");
-                OpenWeatherResponse response = openWeatherRestClient
-                                .get()
-                                .uri(uriBuilder -> uriBuilder
-                                                .path("/data/2.5/weather")
-                                                .queryParam("lat", latitude)
-                                                .queryParam("lon", longitude)
-                                                .queryParam("appid", apiKey)
-                                                .queryParam("units", "metric")
-                                                .build())
-                                .retrieve()
-                                .body(OpenWeatherResponse.class);
+	@Override
+	@Cacheable(cacheNames = "weather", key = "#latitude.toString() + ':' + #longitude.toString()")
+	public WeatherResponse getWeather(BigDecimal latitude, BigDecimal longitude) {
+		log.info("cache miss");
+		OpenWeatherResponse response = openWeatherRestClient.get()
+				.uri(uriBuilder -> uriBuilder.path("/data/2.5/weather").queryParam("lat", latitude)
+						.queryParam("lon", longitude).queryParam("appid", apiKey).queryParam("units", "metric").build())
+				.retrieve().body(OpenWeatherResponse.class);
+		if (response == null) {
+			throw new WeatherApiException("Unable to fetch weather");
+		}
+		return new WeatherResponse(response.getName(), response.getMain().getTemp(), response.getMain().getHumidity(),
+				response.getWind().getSpeed(), response.getWeather().get(0).getDescription());
 
-                if (response == null) {
-                        throw new WeatherApiException("Unable to fetch weather");
-                }
-
-                return new WeatherResponse(
-                                response.getName(),
-                                response.getMain().getTemp(),
-                                response.getMain().getHumidity(),
-                                response.getWind().getSpeed(),
-                                response.getWeather().get(0).getDescription());
-
-        }
+	}
 }

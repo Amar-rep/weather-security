@@ -1,7 +1,10 @@
 package com.example.guardian.config;
 
+import java.time.Instant;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -17,7 +20,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.example.guardian.dto.ErrorResponse;
 import com.example.guardian.security.JwtAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -27,84 +32,82 @@ import lombok.RequiredArgsConstructor;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider)
-            throws Exception {
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationProvider authenticationProvider,
+			ObjectMapper objectMapper) throws Exception {
 
-        return http
+		return http
 
-                .csrf(csrf -> csrf.disable())
+				.csrf(csrf -> csrf.disable())
 
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .authorizeHttpRequests(auth -> auth
+				.authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
+						.requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/logout",
+								"/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
+						.permitAll()
 
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+						.requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        .anyRequest().authenticated())
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint())
-                        .accessDeniedHandler(accessDeniedHandler()))
+						.anyRequest().authenticated())
+				.exceptionHandling(
+						exception -> exception.authenticationEntryPoint(authenticationEntryPoint(objectMapper))
+								.accessDeniedHandler(accessDeniedHandler(objectMapper)))
 
-                .authenticationProvider(authenticationProvider)
+				.authenticationProvider(authenticationProvider)
 
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).build();
-    }
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).build();
+	}
 
-    @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
+	@Bean
+	public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+			PasswordEncoder passwordEncoder) {
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+		provider.setPasswordEncoder(passwordEncoder);
+		return provider;
+	}
 
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+		return configuration.getAuthenticationManager();
+	}
 
-        provider.setPasswordEncoder(passwordEncoder);
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-        return provider;
-    }
+	@Bean
+	AuthenticationEntryPoint authenticationEntryPoint(ObjectMapper objectMapper) {
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+		return (request, response, authException) -> {
 
-        return configuration.getAuthenticationManager();
-    }
+			ErrorResponse errorResponse = new ErrorResponse(HttpServletResponse.SC_UNAUTHORIZED,
+					"Authentication is required", Instant.now());
+			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+			response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+		};
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	AccessDeniedHandler accessDeniedHandler(ObjectMapper objectMapper) {
 
-    @Bean
-    AuthenticationEntryPoint authenticationEntryPoint() {
-        return (request, response, authException) -> {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
+		return (request, response, accessDeniedException) -> {
 
-            response.getWriter().write("""
-                    {
-                      "status": 401,
-                      "error": "Unauthorized",
-                      "message": "Authentication is required"
-                    }
-                    """);
-        };
-    }
+			ErrorResponse errorResponse = new ErrorResponse(HttpServletResponse.SC_FORBIDDEN,
+					"You do not have permission to access this", Instant.now());
+			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+			response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+		};
+	}
 
-    @Bean
-    AccessDeniedHandler accessDeniedHandler() {
-        return (request, response, accessDeniedException) -> {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json");
-
-            response.getWriter().write("""
-                    {
-                      "status": 403,
-                      "error": "Forbidden",
-                      "message": "You do not have permission to access this resource"
-                    }
-                    """);
-        };
-    }
+	@Bean
+	ObjectMapper objectMapper() {
+		return new ObjectMapper().findAndRegisterModules();
+	}
 }

@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,8 +16,8 @@ import com.example.guardian.dto.ErrorResponse;
 public class GlobalExceptionHandler {
 	@ExceptionHandler(MemberNotFoundException.class)
 	public ResponseEntity<ErrorResponse> handleMemberNotFound(MemberNotFoundException ex) {
-		ErrorResponse response = new ErrorResponse(HttpStatus.CONFLICT.value(), ex.getMessage(), Instant.now());
-		return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+		ErrorResponse response = new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage(), Instant.now());
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 	}
 
 	@ExceptionHandler(CityAlreadyExistException.class)
@@ -64,6 +65,12 @@ public class GlobalExceptionHandler {
 		ErrorResponse response = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), Instant.now());
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(403, "Access Denied", Instant.now()));
 	}
 
 	@ExceptionHandler(RegistrationException.class)

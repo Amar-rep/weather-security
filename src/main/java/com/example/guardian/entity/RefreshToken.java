@@ -47,6 +47,6 @@ public class RefreshToken {
 	private Instant revokedAt;
 
 	@Column(name = "created_at")
-	private Instant createdAt;	
+	private Instant createdAt;
 
 }

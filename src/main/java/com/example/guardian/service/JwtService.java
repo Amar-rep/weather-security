@@ -16,55 +16,33 @@ import io.jsonwebtoken.security.Keys;
 
 @Service
 public class JwtService {
-    @Value("${jwt.secret}")
-    private String secret;
+	@Value("${jwt.secret}")
+	private String secret;
 
-    @Value("${jwt.access-token-expiration}")
-    private Duration expiration;
+	@Value("${jwt.access-token-expiration}")
+	private Duration expiration;
 
-    public String generateToken(UserDetails userDetails) {
+	public String generateToken(UserDetails userDetails) {
 
-        return Jwts.builder()
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date())
-                .expiration(
-                        new Date(
-                                System.currentTimeMillis()
-                                        + expiration.toMillis()))
-                .signWith(getKey())
-                .compact();
-    }
+		return Jwts.builder().subject(userDetails.getUsername()).issuedAt(new Date())
+				.expiration(new Date(System.currentTimeMillis() + expiration.toMillis())).signWith(getKey()).compact();
+	}
 
- 
-    public boolean isTokenValid(
-            String token,
-            UserDetails userDetails) {
+	public boolean isTokenValid(String token, UserDetails userDetails) {
+		String username = extractEmail(token);
+		return username.equals(userDetails.getUsername());
+	}
 
-        String username = extractEmail(token);
+	public String extractEmail(String token) {
+		return getClaims(token).getSubject();
+	}
 
-        return username.equals(
-                userDetails.getUsername());
-    }
+	private Claims getClaims(String token) {
+		return Jwts.parser().verifyWith(getKey()).build().parseSignedClaims(token).getPayload();
+	}
 
-    public String extractEmail(String token) {
-
-        return getClaims(token)
-                .getSubject();
-    }
-
-    private Claims getClaims(String token) {
-
-        return Jwts.parser()
-                .verifyWith(getKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-    private SecretKey getKey() {
-
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
+	private SecretKey getKey() {
+		byte[] keyBytes = Decoders.BASE64.decode(secret);
+		return Keys.hmacShaKeyFor(keyBytes);
+	}
 }

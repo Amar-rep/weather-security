@@ -16,16 +16,12 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/weather")
 @RequiredArgsConstructor
 public class WeatherController {
-	  private final WeatherService weatherService;
+	private final WeatherService weatherService;
 
-	    @GetMapping
-	    public ResponseEntity<WeatherResponse> getWeather(
-	            @RequestParam String name,
-	            @RequestParam String state,Authentication authentication) {
-
-	        WeatherResponse response =
-	                weatherService.getWeather(name, state,authentication);
-
-	        return ResponseEntity.ok(response);
-	    }
+	@GetMapping
+	public ResponseEntity<WeatherResponse> getWeather(@RequestParam String name, @RequestParam String state,
+			Authentication authentication) {
+		WeatherResponse response = weatherService.getWeather(name, state, authentication);
+		return ResponseEntity.ok(response);
+	}
 }

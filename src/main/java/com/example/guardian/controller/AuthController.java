@@ -13,6 +13,7 @@ import com.example.guardian.dto.RegisterRequest;
 import com.example.guardian.dto.TokenResponse;
 import com.example.guardian.service.AuthService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -25,29 +26,23 @@ public class AuthController {
 
 	@PostMapping("/register")
 	public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
-
 		authService.register(request);
-
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
 	@PostMapping("/login")
 	public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-
 		return ResponseEntity.ok(authService.login(request));
 	}
 
 	@PostMapping("/refresh")
 	public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-
 		return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
 	}
 
 	@PostMapping("/logout")
 	public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
-
 		authService.logout(request.getRefreshToken());
-
 		return ResponseEntity.noContent().build();
 	}
 }
