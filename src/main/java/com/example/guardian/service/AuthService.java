@@ -70,7 +70,8 @@ public class AuthService {
 			UUID familyId = UUID.randomUUID();
 			String refreshToken = refreshTokenService.createToken(user, familyId);
 			log.debug("User logged in user:" + request.getEmail());
-			return new TokenResponse(accessToken, refreshToken, "Bearer", expiration.toMinutes());
+			return new TokenResponse(accessToken, refreshToken, "Bearer", expiration.toMinutes(),
+					user.getRole().name());
 		} catch (BadCredentialsException e) {
 			log.warn("Invalid credentials userData {}", request.getEmail());
 			throw new InvalidCredentialsException("Invalid authentication info");
@@ -84,7 +85,7 @@ public class AuthService {
 				.roles(user.getRole().name()).build();
 		String newAccessToken = jwtService.generateToken(userDetails);
 		return new TokenResponse(newAccessToken, result.newRefreshToken(), "Bearer",
-				expirationRefreshDuration.toMinutes());
+				expirationRefreshDuration.toMinutes(), user.getRole().name());
 	}
 
 	public void logout(String refreshToken) {

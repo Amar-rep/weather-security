@@ -116,6 +116,7 @@ class AuthServiceTest {
 		TokenResponse response = authService.login(request);
 		assertEquals("access-token", response.accessToken());
 		assertEquals("refresh-token", response.refreshToken());
+		assertEquals("USER", response.role());
 	}
 
 	@Test
@@ -139,6 +140,7 @@ class AuthServiceTest {
 		TokenResponse response = authService.refresh("old-refresh");
 		assertEquals("new-access", response.accessToken());
 		assertEquals("new-refresh", response.refreshToken());
+		assertEquals("USER", response.role());
 	}
 
 	@Test

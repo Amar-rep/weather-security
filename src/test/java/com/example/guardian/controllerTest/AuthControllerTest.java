@@ -39,7 +39,7 @@ class AuthControllerTest {
 	@Test
 	void login_shouldReturn200() {
 		LoginRequest request = new LoginRequest("test@gmail.com", "password123");
-		TokenResponse tokenResponse = new TokenResponse("access-token", "refresh-token", "bearer", 50);
+		TokenResponse tokenResponse = new TokenResponse("access-token", "refresh-token", "bearer", 50, "USER");
 		when(authService.login(request)).thenReturn(tokenResponse);
 		ResponseEntity<TokenResponse> response = authController.login(request);
 		assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -50,7 +50,7 @@ class AuthControllerTest {
 	@Test
 	void refresh_shouldReturn200() {
 		RefreshTokenRequest request = new RefreshTokenRequest("sample-refresh-token");
-		TokenResponse tokenResponse = new TokenResponse("new-access-token", "new-refresh-token", "bearer", 123);
+		TokenResponse tokenResponse = new TokenResponse("new-access-token", "new-refresh-token", "bearer", 123, "USER");
 		when(authService.refresh("sample-refresh-token")).thenReturn(tokenResponse);
 		ResponseEntity<TokenResponse> response = authController.refresh(request);
 		assertEquals(HttpStatus.OK, response.getStatusCode());
