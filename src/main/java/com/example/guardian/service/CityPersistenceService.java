@@ -11,7 +11,6 @@ import com.example.guardian.dto.GeocodingResponse;
 import com.example.guardian.entity.AuditAction;
 import com.example.guardian.entity.City;
 import com.example.guardian.entity.Member;
-import com.example.guardian.exception.CityAlreadyExistException;
 import com.example.guardian.repository.CityRepository;
 
 import jakarta.transaction.Transactional;
@@ -27,11 +26,6 @@ public class CityPersistenceService {
 	@Transactional
 	public List<CityResponse> saveCity(CityRequest request, Member admin, GeocodingResponse geo) {
 
-		List<City> cityExist = cityRepository.findByNameIgnoreCaseAndStateIgnoreCaseAndCountryIgnoreCase(
-				request.getName(), request.getState(), request.getCountry());
-		if (!cityExist.isEmpty()) {
-			throw new CityAlreadyExistException("City already exists");
-		}
 		City city = City.builder().name(request.getName().trim().toLowerCase())
 				.state(request.getState().trim().toLowerCase()).country(request.getCountry().trim())
 				.latitude(geo.getLat()).longitude(geo.getLon()).createdBy(admin).createdAt(Instant.now()).build();

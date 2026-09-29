@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import com.example.guardian.dto.GeocodingResponse;
 import com.example.guardian.exception.GeoCodingException;
@@ -22,16 +23,24 @@ public class OpenGeoCoding implements GeoCodingGateway {
 	@Override
 	public List<GeocodingResponse> getGeoCoding(String name, String state, String country) {
 
-		String query = name + "," + country;
-		GeocodingResponse[] response = openWeatherRestClient
-				.get().uri(uriBuilder -> uriBuilder.path("/geo/1.0/direct").queryParam("q", query)
-						.queryParam("limit", 5).queryParam("appid", apiKey).build())
-				.retrieve().body(GeocodingResponse[].class);
+		try {
+			String query = name + "," + country;
+			GeocodingResponse[] response = openWeatherRestClient
+					.get().uri(uriBuilder -> uriBuilder.path("/geo/1.0/direct").queryParam("q", query)
+							.queryParam("limit", 5).queryParam("appid", apiKey).build())
+					.retrieve().body(GeocodingResponse[].class);
 
-		if (response == null || response.length == 0) {
-			throw new GeoCodingException("Unable to locate position");
+			if (response == null || response.length == 0) {
+				throw new GeoCodingException("Unable to locate position");
+			}
+			return Arrays.stream(response)
+					.filter(loc -> loc.getState() != null && loc.getState().equalsIgnoreCase(state)).toList();
+
+		} catch (GeoCodingException e) {
+			throw e;
+		} catch (RestClientException e) {
+			throw new GeoCodingException("Geocoding service unavailable");
 		}
-		return Arrays.stream(response).filter(loc -> loc.getState() != null && loc.getState().equalsIgnoreCase(state))
-				.toList();
 	}
+
 }

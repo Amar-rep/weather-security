@@ -2,9 +2,7 @@ package com.example.guardian.serviceTest;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,7 +21,6 @@ import com.example.guardian.dto.GeocodingResponse;
 import com.example.guardian.entity.AuditAction;
 import com.example.guardian.entity.City;
 import com.example.guardian.entity.Member;
-import com.example.guardian.exception.CityAlreadyExistException;
 import com.example.guardian.repository.CityRepository;
 import com.example.guardian.service.AuditService;
 import com.example.guardian.service.CityPersistenceService;
@@ -55,9 +52,7 @@ class CityPersistenceServiceTest {
 		geo.setLat(new BigDecimal("11.98"));
 		geo.setLon(new BigDecimal("75.35"));
 
-		when(cityRepository.findByNameIgnoreCaseAndStateIgnoreCaseAndCountryIgnoreCase("Bakkalam", "Kerala", "IN"))
-				.thenReturn(List.of());
-
+	
 		when(cityRepository.save(any(City.class))).thenAnswer(invocation -> {
 
 			City city = invocation.getArgument(0);
@@ -76,22 +71,5 @@ class CityPersistenceServiceTest {
 		verify(auditService).logEvent(admin, AuditAction.CITY_ADDED, "Added city: bakkalam");
 	}
 
-	@Test
-	void saveCity_shouldThrowException_whenCityExists() {
 
-		CityRequest request = new CityRequest();
-		request.setName("Bakkalam");
-		request.setState("Kerala");
-		request.setCountry("IN");
-
-		when(cityRepository.findByNameIgnoreCaseAndStateIgnoreCaseAndCountryIgnoreCase("Bakkalam", "Kerala", "IN"))
-				.thenReturn(List.of(new City()));
-
-		assertThrows(CityAlreadyExistException.class,
-				() -> cityPersistenceService.saveCity(request, new Member(), new GeocodingResponse()));
-
-		verify(cityRepository, never()).save(any());
-
-		verify(auditService, never()).logEvent(any(), any(), any());
-	}
 }

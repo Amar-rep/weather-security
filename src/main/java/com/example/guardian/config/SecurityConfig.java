@@ -58,7 +58,6 @@ public class SecurityConfig {
 								.accessDeniedHandler(accessDeniedHandler(objectMapper)))
 
 				.authenticationProvider(authenticationProvider)
-
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).build();
 	}
 
@@ -84,7 +83,6 @@ public class SecurityConfig {
 	AuthenticationEntryPoint authenticationEntryPoint(ObjectMapper objectMapper) {
 
 		return (request, response, authException) -> {
-
 			ErrorResponse errorResponse = new ErrorResponse(HttpServletResponse.SC_UNAUTHORIZED,
 					"Authentication is required", Instant.now());
 			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -97,7 +95,6 @@ public class SecurityConfig {
 	AccessDeniedHandler accessDeniedHandler(ObjectMapper objectMapper) {
 
 		return (request, response, accessDeniedException) -> {
-
 			ErrorResponse errorResponse = new ErrorResponse(HttpServletResponse.SC_FORBIDDEN,
 					"You do not have permission to access this", Instant.now());
 			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
