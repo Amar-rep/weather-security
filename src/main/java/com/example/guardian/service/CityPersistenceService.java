@@ -29,7 +29,6 @@ public class CityPersistenceService {
 		City city = City.builder().name(request.getName().trim().toLowerCase())
 				.state(request.getState().trim().toLowerCase()).country(request.getCountry().trim())
 				.latitude(geo.getLat()).longitude(geo.getLon()).createdBy(admin).createdAt(Instant.now()).build();
-
 		City savedCity = cityRepository.save(city);
 		auditService.logEvent(admin, AuditAction.CITY_ADDED, "Added city: " + savedCity.getName());
 		CityResponse response = new CityResponse(savedCity.getId(), savedCity.getName(), savedCity.getState(),

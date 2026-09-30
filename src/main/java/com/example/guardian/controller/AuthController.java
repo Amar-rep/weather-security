@@ -13,7 +13,6 @@ import com.example.guardian.dto.RegisterRequest;
 import com.example.guardian.dto.TokenResponse;
 import com.example.guardian.service.AuthService;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
