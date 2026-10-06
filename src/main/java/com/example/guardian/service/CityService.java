@@ -54,15 +54,15 @@ public class CityService {
 
 	public CityResponse findByNameAndState(String name, String state) {
 
-		 throw new RuntimeException("test");
-		/*	
+		 //hrow new RuntimeException("test");
+		
 			  City city = cityRepository.findByNameIgnoreCaseAndStateIgnoreCase(name,
 			  state) .orElseThrow(() -> new
 			  CityNotFoundException("unable to find City by name and state"));
 			  
 			  return new CityResponse(city.getId(), city.getName(), city.getState(),
 			  city.getCountry(), city.getLatitude(), city.getLongitude());
-			  */
+			  
 			    
 	}
 

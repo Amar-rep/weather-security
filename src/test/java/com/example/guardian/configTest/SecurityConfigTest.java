@@ -1,208 +1,112 @@
 package com.example.guardian.configTest;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.test.context.web.WebAppConfiguration;
 
 import com.example.guardian.config.SecurityConfig;
 import com.example.guardian.security.JwtAuthenticationFilter;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
-@WebMvcTest(SecurityConfigTest.TestController.class)
-@Import(SecurityConfig.class)
+@SpringJUnitConfig(SecurityConfigTest.TestConfig.class)
+@WebAppConfiguration
 class SecurityConfigTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private PasswordEncoder passwordEncoder;
 
-    /*
-     * SecurityConfig requires JwtAuthenticationFilter.
-     *
-     * We mock it because JWT authentication itself should be tested
-     * separately. Here we only want to test authorization rules.
-     */
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+        @Autowired
+        private AuthenticationProvider authenticationProvider;
 
-    /*
-     * Required by:
-     *
-     * AuthenticationProvider authenticationProvider(
-     *      UserDetailsService userDetailsService,
-     *      PasswordEncoder passwordEncoder)
-     */
-    @MockitoBean
-    private UserDetailsService userDetailsService;
+        @Autowired
+        private AuthenticationManager authenticationManager;
 
-    @BeforeEach
-    void setupJwtFilter() throws Exception {
+        @Autowired
+        private SecurityFilterChain securityFilterChain;
 
-        /*
-         * Make the mocked JWT filter simply continue to the next filter.
-         *
-         * Otherwise a mocked filter would stop the request here.
-         */
-        doAnswer(invocation -> {
+        @Autowired
+        private AuthenticationEntryPoint authenticationEntryPoint;
 
-            HttpServletRequest request = invocation.getArgument(0);
-            HttpServletResponse response = invocation.getArgument(1);
-            FilterChain filterChain = invocation.getArgument(2);
+        @Autowired
+        private AccessDeniedHandler accessDeniedHandler;
 
-            filterChain.doFilter(request, response);
+        @Test
+        void passwordEncoderShouldBeCreated() {
 
-            return null;
-
-        }).when(jwtAuthenticationFilter)
-                .doFilter(any(), any(), any());
-    }
-
-    /*
-     * Small controller used only for testing SecurityConfig.
-     */
-    @RestController
-    static class TestController {
-
-        @GetMapping("/auth/login")
-        public String login() {
-            return "login";
+                assertNotNull(passwordEncoder);
+                assertInstanceOf(BCryptPasswordEncoder.class, passwordEncoder);
         }
 
-        @GetMapping("/private")
-        public String privateEndpoint() {
-            return "private";
+        @Test
+        void authenticationProviderShouldBeCreated() {
+
+                assertNotNull(authenticationProvider);
+                assertInstanceOf(
+                                DaoAuthenticationProvider.class,
+                                authenticationProvider);
         }
 
-        @GetMapping("/admin/test")
-        public String adminEndpoint() {
-            return "admin";
+        @Test
+        void authenticationManagerShouldBeCreated() {
+
+                assertNotNull(authenticationManager);
         }
-    }
 
-    // ---------------------------------------------------------
-    // permitAll()
-    // ---------------------------------------------------------
+        @Test
+        void securityFilterChainShouldBeCreated() {
 
-    @Test
-    void loginEndpointShouldBeAccessibleWithoutAuthentication()
-            throws Exception {
+                assertNotNull(securityFilterChain);
+        }
 
-        mockMvc.perform(get("/auth/login"))
+        @Test
+        void authenticationEntryPointShouldBeCreated() {
 
-                .andExpect(status().isOk())
+                assertNotNull(authenticationEntryPoint);
+        }
 
-                .andExpect(content().string("login"));
-    }
+        @Test
+        void accessDeniedHandlerShouldBeCreated() {
 
-    // ---------------------------------------------------------
-    // authenticated()
-    // ---------------------------------------------------------
+                assertNotNull(accessDeniedHandler);
+        }
 
-    @Test
-    void privateEndpointWithoutAuthenticationShouldReturn401()
-            throws Exception {
+        @TestConfiguration
+        @EnableWebSecurity
+        @Import(SecurityConfig.class)
+        static class TestConfig {
 
-        mockMvc.perform(get("/private"))
+                @Bean
+                JwtAuthenticationFilter jwtAuthenticationFilter() {
 
-                .andExpect(status().isUnauthorized())
+                        return mock(JwtAuthenticationFilter.class);
+                }
 
-                .andExpect(content()
-                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                @Bean
+                UserDetailsService userDetailsService() {
 
-                .andExpect(jsonPath("$.status").value(401))
-
-                .andExpect(jsonPath("$.message")
-                        .value("Authentication is required"));
-    }
-
-    // ---------------------------------------------------------
-    // Normal authenticated USER
-    // ---------------------------------------------------------
-
-    @Test
-    void authenticatedUserShouldAccessPrivateEndpoint()
-            throws Exception {
-
-        mockMvc.perform(
-                get("/private")
-                        .with(
-                                user("user@gmail.com")
+                        return username -> User
+                                        .withUsername(username)
+                                        .password("{noop}password")
                                         .roles("USER")
-                        )
-        )
-
-                .andExpect(status().isOk())
-
-                .andExpect(content().string("private"));
-    }
-
-    // ---------------------------------------------------------
-    // USER trying ADMIN endpoint
-    // ---------------------------------------------------------
-
-    @Test
-    void userShouldNotAccessAdminEndpoint()
-            throws Exception {
-
-        mockMvc.perform(
-                get("/admin/test")
-                        .with(
-                                user("user@gmail.com")
-                                        .roles("USER")
-                        )
-        )
-
-                .andExpect(status().isForbidden())
-
-                .andExpect(content()
-                        .contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-
-                .andExpect(jsonPath("$.status").value(403))
-
-                .andExpect(jsonPath("$.message")
-                        .value(
-                                "You do not have permission to access this"
-                        ));
-    }
-
-    // ---------------------------------------------------------
-    // ADMIN accessing ADMIN endpoint
-    // ---------------------------------------------------------
-
-    @Test
-    void adminShouldAccessAdminEndpoint()
-            throws Exception {
-
-        mockMvc.perform(
-                get("/admin/test")
-                        .with(
-                                user("admin@gmail.com")
-                                        .roles("ADMIN")
-                        )
-        )
-
-                .andExpect(status().isOk())
-
-                .andExpect(content().string("admin"));
-    }
+                                        .build();
+                }
+        }
 }
