@@ -17,11 +17,4 @@ public class OpenWeatherResponse {
 	private Main main;
 	private Wind wind;
 	private List<Weather> weather;
-
-
-	
-
-	
 }
-
-
